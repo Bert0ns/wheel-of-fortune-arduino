@@ -16,11 +16,13 @@ State currentState = STATE_IDLE;
 int buttonState = 0;
 int lastButtonState = 0;
 int rotationPosition = 0;
+char ledBrightness = 100;
 
 void setup() {
   FastLED.addLeds<WS2812B, DATA_PIN, RGB>(leds, NUM_LEDS); //WS2815 è compatibile con WS2812B -> collegare i due data pin insieme
   pinMode(BUTTON_PIN, INPUT);
 
+  FastLED.setBrightness(ledBrightness);
   FastLED.clear();
   FastLED.show();
 }
@@ -38,7 +40,6 @@ void loop() {
       handleRotatingStateTransitions();
       break;
   }
-  //delay(50);
 }
 
 void readAllInputs() {
@@ -47,6 +48,8 @@ void readAllInputs() {
 
 void handleIdleState() {
   FastLED.clear();
+  //fill_noise16(leds, NUM_LEDS, 8, 8, 8, 8, 8, 8, 8);
+  //fill_rainbow(leds, NUM_LEDS, 0);
   FastLED.show();
 }
 
@@ -58,11 +61,23 @@ void handleIdleStateTransitions() {
 }
 
 void handleRotatingState() {
+  /*
   for (int i = 0; i < NUM_LEDS; i++) {
     updateRotation();
     FastLED.show();
     delay(10); // Velocità di rotazione
   }
+  */
+  uint8_t hue = 0;
+	for(int i = 0; i < NUM_LEDS; i++) {
+		// Set the i'th led to red 
+		leds[i] = CHSV(hue++, 255, 255);
+		// Show the leds
+		FastLED.show(); 
+		// now that we've shown the leds, reset the i'th led to black
+		//leds[i] = CRGB::Black;
+		fadeall();
+	}
 }
 
 void handleRotatingStateTransitions(){
@@ -78,3 +93,5 @@ void updateRotation() {
 
   rotationPosition = (rotationPosition + 1) % NUM_LEDS; // Aggiorna la posizione
 }
+
+void fadeall() { for(int i = 0; i < NUM_LEDS; i++) { leds[i].nscale8(250); } }
