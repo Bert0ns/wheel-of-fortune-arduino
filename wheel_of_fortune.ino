@@ -1,7 +1,7 @@
 #include <FastLED.h>
 
 // Configurazione della striscia LED
-#define LED_PIN     3       // Pin di connessione al Data Input della striscia LED
+#define LED_PIN     3        // Pin di connessione al Data Input della striscia LED
 #define NUM_LEDS    288      // Numero totale di LED nella striscia
 #define BUTTON_PIN  4        // Pin per il pulsante
 #define LEDS_PER_STEP 5      // Numero di LED da illuminare contemporaneamente
