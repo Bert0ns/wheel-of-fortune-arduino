@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include <FastLED.h>
 
 #define NUM_LEDS (144 * 2)  // 2 metri * 144 LED/metro
@@ -56,6 +57,12 @@ void handleIdleStateTransitions() {
     lastButtonState = buttonState;
 }
 
+void fadeall() {
+    for (int i = 0; i < NUM_LEDS; i++) {
+        leds[i].nscale8(250);
+    }
+}
+
 void handleRotatingState() {
     uint8_t hue = 0;
     for (int i = 0; i < randomLedSelected; i++) {
@@ -67,12 +74,6 @@ void handleRotatingState() {
         fadeall();
 
         hue = (hue + 1) % 255;
-    }
-}
-
-void fadeall() {
-    for (int i = 0; i < NUM_LEDS; i++) {
-        leds[i].nscale8(250);
     }
 }
 
