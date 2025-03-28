@@ -18,35 +18,51 @@ State currentState = STATE_IDLE;
 int buttonState = 0;
 int lastButtonState = 0;
 int rotationPosition = 0;
-char ledBrightness = 100;
+char ledBrightness = 50;
 int randomLedSelected = 1;
 
 const CRGB colorViolaFesta = CRGB(255, 0, 157);
 const CRGB colorBluFesta = CRGB(255, 0, 157);
+
+void setIdleAnimation() {
+    FastLED.clear();
+    fill_gradient_RGB(leds, NUM_LEDS, colorViolaFesta, colorBluFesta, colorViolaFesta, colorBluFesta);
+    // fill_noise16(leds, NUM_LEDS, 8, 8, 8, 8, 8, 8, 8);
+    // fill_rainbow(leds, NUM_LEDS, 0);
+    FastLED.show();
+}
+
+void transitionToStateIdle() {
+    currentState = STATE_IDLE;
+    setIdleAnimation();
+}
 
 void setup() {
     FastLED.addLeds<WS2812B, DATA_PIN, RGB>(leds, NUM_LEDS);  // WS2815 è compatibile con WS2812B -> collegare i due data pin insieme
     pinMode(BUTTON_PIN, INPUT);
 
     FastLED.setBrightness(ledBrightness);
-    FastLED.clear();
-    FastLED.show();
+
+    transitionToStateIdle();  // Inizializza lo stato a idle
 }
 
 void readAllInputs() {
-    buttonState = digitalRead(BUTTON_PIN);
-}
+    int reading = digitalRead(BUTTON_PIN);
+    /*unsigned long currentMillis = millis();
 
-void transitionToStateIdle() {
-    currentState = STATE_IDLE;
+    static unsigned long lastDebounceTime = currentMillis;
+    static const unsigned long debounceDelay = 100;
 
-    // set output for idle state
-    FastLED.clear();
+    if (reading != lastButtonState) {
+        lastDebounceTime = currentMillis;
+    }
 
-    fill_gradient_RGB(leds, NUM_LEDS, colorViolaFesta, colorBluFesta, colorViolaFesta, colorBluFesta);
-    // fill_noise16(leds, NUM_LEDS, 8, 8, 8, 8, 8, 8, 8);
-    // fill_rainbow(leds, NUM_LEDS, 0);
-    FastLED.show();
+    if ((currentMillis - lastDebounceTime) > debounceDelay) {
+        lastButtonState = buttonState;
+        buttonState = reading;
+    }
+    */
+    buttonState = reading;
 }
 
 void handleIdleStateTransitions() {
@@ -68,12 +84,12 @@ void handleRotatingState() {
     for (int i = 0; i < randomLedSelected; i++) {
         leds[i % NUM_LEDS] = CHSV(hue, 255, 255);
 
-        FastLED.show();
-
         // leds[i] = CRGB::Black;
         fadeall();
 
         hue = (hue + 1) % 255;
+
+        FastLED.show();
     }
 }
 
@@ -87,6 +103,8 @@ void loop() {
         case STATE_ROTATING:
             handleRotatingState();
             transitionToStateIdle();
+            break;
+        default:
             break;
     }
 }
