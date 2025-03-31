@@ -63,7 +63,8 @@ void handleRotatingState() {
 }
 
 void doIdleAnimation(uint8_t colorIndex = 0) {
-    static const int timePerAnimation = 10000;  // Tempo di animazione in millisecondi
+    static const int NUMBER_OF_IDLE_ANIMATIONS = 3;  // Numero di animazioni idle
+    static const int TIME_PER_ANIMATION = 10000;  // Tempo di animazione in millisecondi
     static int animationNumber = 0;
     static long animationStartTime = millis();
     static uint8_t brightness = 255;
@@ -71,15 +72,20 @@ void doIdleAnimation(uint8_t colorIndex = 0) {
     static CRGBPalette16 currentPalette = RainbowColors_p;
 
     long currentTime = millis();
-    if (currentTime - animationStartTime >= timePerAnimation) {
+    if (currentTime - animationStartTime >= TIME_PER_ANIMATION) {
         animationStartTime = currentTime;
-        animationNumber = (animationNumber + 1) % 2;  // Cambia animazione
+        animationNumber = (animationNumber + 1) % NUMBER_OF_IDLE_ANIMATIONS;  // Cambia animazione
 
         switch (animationNumber) {
             case 0:
                 brightness = 255;
                 currentBlending = LINEARBLEND;
                 currentPalette = RainbowColors_p;
+                break;
+            case 2:
+                brightness = 255;
+                currentBlending = NOBLEND;
+                currentPalette = PartyColors_p;
                 break;
             case 1:
             default:
@@ -89,6 +95,10 @@ void doIdleAnimation(uint8_t colorIndex = 0) {
                 break;
         }
         FastLED.clear();
+    }
+
+    if(animationNumber==1){
+        delay(10); 
     }
     
     for (int i = 0; i < NUM_LEDS; ++i) {
