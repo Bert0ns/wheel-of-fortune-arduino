@@ -28,6 +28,8 @@ int randomLedSelected = 1;
 const CRGB colorViolaFesta = CRGB(242, 0, 255);
 const CRGB colorBluFesta = CRGB(92, 220, 237);
 
+void fadeAllLeds();
+
 void transitionToStateIdle() {
     currentState = STATE_IDLE;
 }
@@ -49,12 +51,6 @@ void handleIdleStateTransitions() {
     lastButtonState = buttonState;
 }
 
-void fadeAllLeds() {
-    for (int i = 0; i < NUM_LEDS; i++) {
-        leds[i].nscale8(250);
-    }
-}
-
 void handleRotatingState() {
     uint8_t hue = 0;
     for (int i = 0; i < randomLedSelected; i++) {
@@ -66,13 +62,34 @@ void handleRotatingState() {
 }
 
 void doIdleAnimation(uint8_t colorIndex = 0) {
-    FastLED.clear();
-    // fill_gradient_RGB(leds, NUM_LEDS, colorViolaFesta, colorBluFesta, colorViolaFesta, colorBluFesta);
-    // fill_noise16(leds, NUM_LEDS, 8, 8, 8, 8, 8, 8, 8);
-    // fill_rainbow(leds, NUM_LEDS, 0);
-    uint8_t brightness = 255;
-    TBlendType currentBlending = LINEARBLEND;
-    CRGBPalette16 currentPalette = RainbowColors_p;
+    static const int timePerAnimation = 10000;  // Tempo di animazione in millisecondi
+    static int animationNumber = 0;
+    static long animationStartTime = millis();
+    static uint8_t brightness = 255;
+    static TBlendType currentBlending = LINEARBLEND;
+    static CRGBPalette16 currentPalette = RainbowColors_p;
+
+    long currentTime = millis();
+    if (currentTime - animationStartTime >= timePerAnimation) {
+        animationStartTime = currentTime;
+        animationNumber = (animationNumber + 1) % 2;  // Cambia animazione
+
+        switch (animationNumber) {
+            case 0:
+                brightness = 255;
+                currentBlending = LINEARBLEND;
+                currentPalette = RainbowColors_p;
+                break;
+            case 1:
+            default:
+                brightness = 255;
+                currentBlending = NOBLEND;
+                currentPalette = RainbowStripeColors_p;
+                break;
+        }
+        FastLED.clear();
+    }
+    
     for (int i = 0; i < NUM_LEDS; ++i) {
         leds[i] = ColorFromPalette(currentPalette, colorIndex, brightness, currentBlending);
         colorIndex += 3;
@@ -139,5 +156,11 @@ void loop() {
             break;
         default:
             break;
+    }
+}
+
+void fadeAllLeds() {
+    for (int i = 0; i < NUM_LEDS; i++) {
+        leds[i].nscale8(250);
     }
 }
