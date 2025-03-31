@@ -29,8 +29,9 @@ const CRGB colorViolaFesta = CRGB(242, 0, 255);
 const CRGB colorBluFesta = CRGB(92, 220, 237);
 
 void fadeAllLeds();
+void readAllInputs();
 
-void transitionToStateIdle() {
+ void transitionToStateIdle() {
     currentState = STATE_IDLE;
 }
 
@@ -131,11 +132,6 @@ void doWinningAnimation(int ledSelected) {
     delay(BLINKING_RATE);
 }
 
-void readAllInputs() {
-    int reading = digitalRead(BUTTON_PIN);
-    buttonState = reading;
-}
-
 void loop() {
     static uint8_t startIndex = 0;
     readAllInputs();
@@ -157,6 +153,11 @@ void loop() {
         default:
             break;
     }
+}
+
+void readAllInputs() {
+    int reading = digitalRead(BUTTON_PIN);
+    buttonState = reading;
 }
 
 void fadeAllLeds() {
