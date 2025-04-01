@@ -7,18 +7,20 @@
 #define BUTTON_PIN (4)
 #define LEDS_PER_STEP (10)   // Lunghezza della porzione illuminata
 #define NUM_PIE_SLICES (8)   // Numero di spicchi della ruota
+#define LED_PER_SLICE (NUM_LEDS / NUM_PIE_SLICES)
 #define BLINKING_RATE (250)  // Frequenza di lampeggio in millisecondi
 #define NUM_TOTAL_BLINKS (12)      // Numero di lampeggi
+#define FADE_SCALE (250)  // Fattore di fade (0-255)
 
 CRGB leds[NUM_LEDS];
 
 enum State {
-    STATE_IDLE,
-    STATE_ROTATING,
-    STATE_WINNING_ANIMATION,
+    IDLE,
+    ROTATING,
+    WINNING_ANIMATION,
 };
 
-State currentState = STATE_IDLE;
+State currentState = IDLE;
 int buttonState = 0;
 int lastButtonState = 0;
 int rotationPosition = 0;
@@ -31,23 +33,23 @@ const CRGB colorBluFesta = CRGB(92, 220, 237);
 void fadeAllLeds();
 void readAllInputs();
 
- void transitionToStateIdle() {
-    currentState = STATE_IDLE;
-}
+void transitionToState(State newState);
 
 void setup() {
     FastLED.addLeds<WS2812B, DATA_PIN, RGB>(leds, NUM_LEDS);  // WS2815 è compatibile con WS2812B -> collegare i due data pin insieme
     pinMode(BUTTON_PIN, INPUT);
 
     FastLED.setBrightness(ledBrightness);
+    FastLED.clear();  // Pulisce i LED all'avvio
+    FastLED.show();   // Mostra il colore iniziale (spento)
 
-    transitionToStateIdle();  // Inizializza lo stato a idle
+    transitionToState(State::IDLE);  // Inizializza lo stato a IDLE
 }
 
 void handleIdleStateTransitions() {
     if (lastButtonState == LOW && buttonState == HIGH) {  // Pulsante premuto, fronte salita
-        currentState = STATE_ROTATING;
         randomLedSelected = random(NUM_LEDS, MAX_LED_NUMBER_SELECTED);
+        transitionToState(State::ROTATING);  // Passa allo stato ROTATING
     }
     lastButtonState = buttonState;
 }
@@ -59,6 +61,31 @@ void handleRotatingState() {
         fadeAllLeds();
         hue = (hue + 1) % 255;
         FastLED.show();
+    }
+}
+
+void setIdleAnimation(int animationNumber, CRGBPalette16 &palette, TBlendType &blending, uint8_t &brightness) {
+    switch (animationNumber) {
+        case 0:
+            palette = RainbowColors_p;
+            blending = LINEARBLEND;
+            brightness = 255;
+            break;
+        case 1:
+            palette = RainbowStripeColors_p;
+            blending = NOBLEND;
+            brightness = 255;
+            break;
+        case 2:
+            palette = PartyColors_p;
+            blending = NOBLEND;
+            brightness = 255;
+            break;
+        default:
+            palette = RainbowColors_p;
+            blending = LINEARBLEND;
+            brightness = 255;
+            break;
     }
 }
 
@@ -75,25 +102,7 @@ void doIdleAnimation(uint8_t colorIndex = 0) {
     if (currentTime - animationStartTime >= TIME_PER_ANIMATION) {
         animationStartTime = currentTime;
         animationNumber = (animationNumber + 1) % NUMBER_OF_IDLE_ANIMATIONS;  // Cambia animazione
-
-        switch (animationNumber) {
-            case 0:
-                brightness = 255;
-                currentBlending = LINEARBLEND;
-                currentPalette = RainbowColors_p;
-                break;
-            case 2:
-                brightness = 255;
-                currentBlending = NOBLEND;
-                currentPalette = PartyColors_p;
-                break;
-            case 1:
-            default:
-                brightness = 255;
-                currentBlending = NOBLEND;
-                currentPalette = RainbowStripeColors_p;
-                break;
-        }
+        setIdleAnimation(animationNumber, currentPalette, currentBlending, brightness);
         FastLED.clear();
     }
 
@@ -116,24 +125,21 @@ void doWinningAnimation(int ledSelected) {
 
     if (numberOfBlinks >= NUM_TOTAL_BLINKS) {
         numberOfBlinks = 0;
-        transitionToStateIdle();
+        transitionToState(State::IDLE);
         return;
     }
-
-    ledSelected = ledSelected % NUM_LEDS;
-    int ledPerSlice = NUM_LEDS / NUM_PIE_SLICES;
 
     if (numberOfBlinks % 2 == 0) {
         fill_solid(leds, NUM_LEDS, backgroundColor);
     } else {
         for (int i = 0; i < NUM_PIE_SLICES; i++) {
-            int startLed = i * ledPerSlice;
-            int sliceSelected = ledSelected / ledPerSlice;
+            int startLed = i * LED_PER_SLICE;
+            int sliceSelected = ledSelected / LED_PER_SLICE;
 
             if (i == sliceSelected) {
-                fill_solid(leds + startLed, ledPerSlice, winningColor);
+                fill_solid(leds + startLed, LED_PER_SLICE, winningColor);
             } else {
-                fill_solid(leds + startLed, ledPerSlice, backgroundColor);
+                fill_solid(leds + startLed, LED_PER_SLICE, backgroundColor);
             }
         }
     }
@@ -142,25 +148,28 @@ void doWinningAnimation(int ledSelected) {
     delay(BLINKING_RATE);
 }
 
+void transitionToState(State newState) {
+    currentState = newState;
+}
+
 void loop() {
     static uint8_t startIndex = 0;
     readAllInputs();
 
     switch (currentState) {
-        case STATE_IDLE:
+        case ROTATING:
+            handleRotatingState();
+
+            transitionToState(State::WINNING_ANIMATION);
+            break;
+        case WINNING_ANIMATION:
+            doWinningAnimation(randomLedSelected % NUM_LEDS);
+            break;
+        case IDLE:
+        default:
             handleIdleStateTransitions();
             startIndex++; /* motion speed */
             doIdleAnimation(startIndex);
-            break;
-        case STATE_ROTATING:
-            handleRotatingState();
-
-            currentState = STATE_WINNING_ANIMATION;
-            break;
-        case STATE_WINNING_ANIMATION:
-            doWinningAnimation(randomLedSelected);
-            break;
-        default:
             break;
     }
 }
@@ -172,6 +181,6 @@ void readAllInputs() {
 
 void fadeAllLeds() {
     for (int i = 0; i < NUM_LEDS; i++) {
-        leds[i].nscale8(250);
+        leds[i].nscale8(FADE_SCALE);
     }
 }
