@@ -5,7 +5,6 @@
 #define MAX_LED_NUMBER_SELECTED (NUM_LEDS * 5)
 #define DATA_PIN (7)
 #define BUTTON_PIN (4)
-#define LEDS_PER_STEP (10)   // Lunghezza della porzione illuminata
 #define NUM_PIE_SLICES (8)   // Numero di spicchi della ruota
 #define LED_PER_SLICE (NUM_LEDS / NUM_PIE_SLICES)
 #define BLINKING_RATE (250)  // Frequenza di lampeggio in millisecondi
@@ -13,6 +12,7 @@
 #define FADE_SCALE (250)  // Fattore di fade (0-255)
 
 CRGB leds[NUM_LEDS];
+char ledBrightness = 200; // Luminosità iniziale dei LED (0-255)
 
 enum State {
     IDLE,
@@ -24,15 +24,14 @@ State currentState = IDLE;
 int buttonState = 0;
 int lastButtonState = 0;
 int rotationPosition = 0;
-char ledBrightness = 10;
 int randomLedSelected = 1;
 
 const CRGB colorViolaFesta = CRGB(242, 0, 255);
 const CRGB colorBluFesta = CRGB(92, 220, 237);
 
+void fadeLeds(int startLed, int endLed, uint8_t fadeScale);
 void fadeAllLeds();
 void readAllInputs();
-
 void transitionToState(State newState);
 
 void setup() {
@@ -57,8 +56,10 @@ void handleIdleStateTransitions() {
 void handleRotatingState() {
     uint8_t hue = 0;
     for (int i = 0; i < randomLedSelected; i++) {
-        leds[i % NUM_LEDS] = CHSV(hue, 255, 255);
+        int currentLed = i % NUM_LEDS;
+        leds[currentLed] = CHSV(hue, 255, 255);
         fadeAllLeds();
+        //fadeLeds(0, currentLed);
         hue = (hue + 1) % 255;
         FastLED.show();
     }
@@ -66,31 +67,32 @@ void handleRotatingState() {
 
 void setIdleAnimation(int animationNumber, CRGBPalette16 &palette, TBlendType &blending, uint8_t &brightness) {
     switch (animationNumber) {
-        case 0:
-            palette = RainbowColors_p;
-            blending = LINEARBLEND;
-            brightness = 255;
-            break;
         case 1:
             palette = RainbowStripeColors_p;
             blending = NOBLEND;
-            brightness = 255;
+            brightness = 240;
             break;
         case 2:
             palette = PartyColors_p;
             blending = NOBLEND;
-            brightness = 255;
+            brightness = 170;
             break;
+        case 3:
+            palette = RainbowStripeColors_p;
+            blending = LINEARBLEND;
+            brightness = 220;
+            break;
+        case 0:
         default:
             palette = RainbowColors_p;
             blending = LINEARBLEND;
-            brightness = 255;
+            brightness = 170;
             break;
     }
 }
 
 void doIdleAnimation(uint8_t colorIndex = 0) {
-    static const int NUMBER_OF_IDLE_ANIMATIONS = 3;  // Numero di animazioni idle
+    static const int NUMBER_OF_IDLE_ANIMATIONS = 4;  // Numero di animazioni idle
     static const int TIME_PER_ANIMATION = 10000;  // Tempo di animazione in millisecondi
     static int animationNumber = 0;
     static long animationStartTime = millis();
@@ -180,7 +182,11 @@ void readAllInputs() {
 }
 
 void fadeAllLeds() {
-    for (int i = 0; i < NUM_LEDS; i++) {
+    fadeLeds(0, NUM_LEDS, FADE_SCALE);  // Fade all LEDs
+}
+
+void fadeLeds(int startLed, int endLed, uint8_t fadeScale = FADE_SCALE) {
+    for (int i = startLed; i < endLed; i++) {
         leds[i].nscale8(FADE_SCALE);
     }
 }
