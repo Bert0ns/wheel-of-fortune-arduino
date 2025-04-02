@@ -3,7 +3,7 @@
 
 #define NUM_LEDS (144 * 2)  // 2 metri * 144 LED/metro
 #define MAX_LED_NUMBER_SELECTED (NUM_LEDS * 5)
-#define DATA_PIN (3)
+#define DATA_PIN (7)
 #define BUTTON_PIN (4)
 #define LEDS_PER_STEP (10)   // Lunghezza della porzione illuminata
 #define NUM_PIE_SLICES (8)   // Numero di spicchi della ruota
