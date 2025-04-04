@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <FastLED.h>
 
-#define NUM_LEDS (144 * 2)  // 2 metri * 144 LED/metro
+#define NUM_LEDS (144 * 2 - 24)  // 2 metri * 144 LED/metro
 #define MAX_LED_NUMBER_SELECTED (NUM_LEDS * 5)
 #define DATA_PIN (7)
 #define BUTTON_PIN (4)
@@ -12,7 +12,7 @@
 #define FADE_SCALE (250)  // Fattore di fade (0-255)
 
 CRGB leds[NUM_LEDS];
-char ledBrightness = 200; // Luminosità iniziale dei LED (0-255)
+char ledBrightness = 100; // Luminosità iniziale dei LED (0-255)
 
 enum State {
     IDLE,
@@ -121,7 +121,8 @@ void doIdleAnimation(uint8_t colorIndex = 0) {
 }
 
 void doWinningAnimation(int ledSelected) {
-    static const CRGB winningColor = CRGB(255, 0, 255);
+    static const CRGB winningColor1 = CRGB(255, 30, 255);
+    static const CRGB winningColor2 = CRGB(225, 100, 42);
     static const CRGB backgroundColor = CRGB(0, 0, 0);
     static int numberOfBlinks = 0;
 
@@ -132,14 +133,23 @@ void doWinningAnimation(int ledSelected) {
     }
 
     if (numberOfBlinks % 2 == 0) {
-        fill_solid(leds, NUM_LEDS, backgroundColor);
+        for (int i = 0; i < NUM_PIE_SLICES; i++) {
+            int startLed = i * LED_PER_SLICE;
+            int sliceSelected = ledSelected / LED_PER_SLICE;
+
+            if (i == sliceSelected) {
+                fill_solid(leds + startLed, LED_PER_SLICE, winningColor2);
+            } else {
+                fill_solid(leds + startLed, LED_PER_SLICE, backgroundColor);
+            }
+        }
     } else {
         for (int i = 0; i < NUM_PIE_SLICES; i++) {
             int startLed = i * LED_PER_SLICE;
             int sliceSelected = ledSelected / LED_PER_SLICE;
 
             if (i == sliceSelected) {
-                fill_solid(leds + startLed, LED_PER_SLICE, winningColor);
+                fill_solid(leds + startLed, LED_PER_SLICE, winningColor1);
             } else {
                 fill_solid(leds + startLed, LED_PER_SLICE, backgroundColor);
             }
@@ -152,6 +162,19 @@ void doWinningAnimation(int ledSelected) {
 
 void transitionToState(State newState) {
     currentState = newState;
+
+    if (newState == State::IDLE) {
+        ledBrightness = 70;
+        FastLED.setBrightness(ledBrightness);
+    }
+    else if (newState == State::ROTATING) {
+        ledBrightness = 200;
+        FastLED.setBrightness(ledBrightness);
+    }
+    else if (newState == State::WINNING_ANIMATION) {
+        ledBrightness = 200;
+        FastLED.setBrightness(ledBrightness);
+    }
 }
 
 void loop() {
